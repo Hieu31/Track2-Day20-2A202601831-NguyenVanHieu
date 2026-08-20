@@ -136,7 +136,7 @@ Việc tối ưu hóa số luồng (`-t`) trực tiếp can thiệp vào khả n
 > Bỏ trống nếu không làm. Xem `bonus/README.md`. Đừng làm hết — **một** finding sâu
 > ăn điểm hơn năm bảng nông.
 
-**Đã làm:** B1 (Build llama.cpp từ source vs Prebuilt binary)
+**Đã làm:** B1 (Build llama.cpp) + B5/C8 (Semantic Cache)
 
 **Numbers:**
 
@@ -144,19 +144,19 @@ Việc tối ưu hóa số luồng (`-t`) trực tiếp can thiệp vào khả n
 before:  5.7 tok/s (prebuilt release)
 after:   5.8 tok/s (source build, -DGGML_NATIVE=ON)
 speedup: 1.02×
+Semantic Cache Hit Rate: 3/8 (38% với threshold 0.8), tiết kiệm 3 cuộc gọi LLM (~750ms-15s decode).
 ```
 
 **Điều này nói lên gì mà deck chưa nói:**
 
-Bản prebuilt phát hành của llama.cpp đã được thiết kế rất tối ưu cho vi xử lý x86 thông qua cơ chế CPUID runtime dispatch để kích hoạt kernel AVX2/AVX-512 phù hợp tại thời điểm chạy. Đồng thời, đối với tác vụ decode LLM trên phần cứng này, tốc độ chủ yếu bị giới hạn bởi băng thông bộ nhớ RAM (memory bandwidth) hơn là khả năng tính toán của CPU (instruction-bound). Do đó, việc tự biên dịch trực tiếp từ nguồn với `-DGGML_NATIVE=ON` không tạo ra sự khác biệt đáng kể (chỉ 1.02x).
+1. **Về compiler (B1):** Bản prebuilt của llama.cpp đã tự động chọn kernel AVX2/AVX-512 tại runtime qua CPUID. Tác vụ decode chủ yếu bị giới hạn bởi memory bandwidth nên biên dịch native chỉ đạt 1.02x.
+2. **Về Semantic Cache (C8):** Dùng Chat model ở pooling mode làm sentence embedder khiến dải điểm similarity bị nén hẹp (0.55 - 0.86). Kết quả là phát sinh cả **False Miss** (câu #3, #4 diễn đạt lại nhưng sim < 0.8) lẫn **False Hit** nghiêm trọng (câu #7 "What is prefix caching?" là chủ đề mới nhưng sim đạt 0.86 -> hit nhầm). Không có threshold đơn lẻ nào sửa được cả hai trường hợp nếu không dùng Embedding model chuyên dụng.
 
 ---
 
 ## 7. Điều làm bạn ngạc nhiên nhất  *(optional)*
 
-*(1–2 câu. Không bắt buộc, nhưng grader đọc hết.)*
-
-*(để trống nếu bạn không làm phần này)*
+Điều ngạc nhiên nhất là hiện tượng False Hit ở Semantic Cache: câu hỏi hoàn toàn mới như *"What is prefix caching?"* lại đạt similarity lên tới 0.86 và bị trả về kết quả nhầm của câu trước đó. Điều này chứng minh rằng một Decoder LLM thông thường không thể làm tốt vai trò của một Dedicated Embedding Model trong sản phẩm thực tế, đồng thời cảnh báo rủi ro bảo mật về timing side-channel giữa các tenant khi dùng chung cache.
 
 ---
 
