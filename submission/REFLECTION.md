@@ -27,7 +27,7 @@
 - **Quantization:** UD-Q4_K_XL + UD-Q2_K_XL (từ `models/active.json`)
 
 **Chạy ở đâu:** laptop của tôi
-_(Nếu dùng cloud fallback: nói rõ vì sao — RAM < 8 GB, setup fail, v.v. Không mất điểm.)_
+*(Nếu dùng cloud fallback: nói rõ vì sao — RAM < 8 GB, setup fail, v.v. Không mất điểm.)*
 
 **Setup story** (≤ 80 chữ): điều gì cần thay đổi để lab chạy trên máy bạn? Có bước
 nào fail rồi phải workaround không?
@@ -41,7 +41,7 @@ Mọi cài đặt ban đầu diễn ra suôn sẻ nhờ script `make setup`. Dù
 > Paste bảng từ `benchmarks/01-quickstart-results.md` (`make bench` tự sinh).
 
 | Quantization | Size (GB) | Load (ms) | TTFT P50/P95 (ms) | TPOT P50/P95 (ms) | E2E P50/P95/P99 (ms) | Decode (tok/s) |
-|---|--:|--:|--:|--:|--:|--:|
+| --- | --: | --: | --: | --: | --: | --: |
 | UD-Q4_K_XL | 2.97 | 17716 | 1634 / 1774 | 183.9 / 214.6 | 12931 / 15159 / 15159 | 5.4 |
 | UD-Q2_K_XL | 2.24 | 14377 | 2711 / 3901 | 209.2 / 220.0 | 15858 / 17758 / 17758 | 4.8 |
 
@@ -58,7 +58,7 @@ Bản 2-bit xử lý chậm hơn (4.8 vs 5.4 tok/s) vì đánh đổi băng thô
 > Từ `benchmarks/02-server-results.md` (`make load-report`).
 
 | Users | RPS | P50 (ms) | P95 (ms) | P99 (ms) | Eff. concurrency | Failures |
-|--:|--:|--:|--:|--:|--:|--:|
+| --: | --: | --: | --: | --: | --: | --: |
 | 10 | 0.13 | 27000 | 30000 | 30000 | 3.7 | 0.0% |
 | 50 | 0.19 | 43000 | 43000 | 43000 | 6.0 | 0.0% |
 
@@ -83,7 +83,7 @@ Server bão hòa quanh mức 4 requests. Bằng chứng là lượng user x5 nh�
 > Từ `make pipeline`. Nói thật cái nào real, cái nào stub — stub **không** mất điểm.
 
 | Day | Piece | Real hay stub? |
-|---|---|---|
+| --- | --- | --- |
 | N16 Cloud/IaC | - | stub |
 | N17 Data pipeline | - | stub |
 | N18 Lakehouse | - | stub |
@@ -120,10 +120,10 @@ speedup: 1.76×
 
 **Tại sao nó work** (1–2 đoạn — đây là phần grader đọc kỹ nhất):
 
-_Giải thích như đang nói với bạn ngồi cạnh. Bám vào **cơ chế**, không phải "vibes":
+*Giải thích như đang nói với bạn ngồi cạnh. Bám vào **cơ chế**, không phải "vibes":
 memory bandwidth? vector width? cache residency? scheduling? queueing? Nếu kết quả
 **khác** với kỳ vọng từ deck — nói rõ, và giải thích vì sao. Grader thưởng điểm cho
-lập luận đúng về một kết quả bất ngờ, hơn là một con số đẹp không được giải thích._
+lập luận đúng về một kết quả bất ngờ, hơn là một con số đẹp không được giải thích.*
 
 Việc tối ưu hóa số luồng (`-t`) trực tiếp can thiệp vào khả năng khai thác tính toán của CPU. Máy tính của tôi có cấu trúc 2 physical cores và 4 logical cores. Khi chạy với 1 luồng (`-t 1`), CPU bị "nghẽn nút cổ chai" hoàn toàn bởi giới hạn tính toán (compute-bound) của core đó, khiến tốc độ giải mã chậm. Nhưng khi sử dụng cấu hình `-t 4`, ứng dụng lợi dụng công nghệ Hyper-threading đẩy hiệu năng xử lý song song, tốc độ giải mã tăng từ 3.7 tok/s lên 6.5 tok/s (tăng 1.76 lần).
 
@@ -136,27 +136,27 @@ Việc tối ưu hóa số luồng (`-t`) trực tiếp can thiệp vào khả n
 > Bỏ trống nếu không làm. Xem `bonus/README.md`. Đừng làm hết — **một** finding sâu
 > ăn điểm hơn năm bảng nông.
 
-**Đã làm:** 
+**Đã làm:** B1 (Build llama.cpp từ source vs Prebuilt binary)
 
 **Numbers:**
 
 ```
-before:  
-after:   
-speedup: 
+before:  5.7 tok/s (prebuilt release)
+after:   5.8 tok/s (source build, -DGGML_NATIVE=ON)
+speedup: 1.02×
 ```
 
 **Điều này nói lên gì mà deck chưa nói:**
 
-_(để trống nếu bạn không làm phần này)_
+Bản prebuilt phát hành của llama.cpp đã được thiết kế rất tối ưu cho vi xử lý x86 thông qua cơ chế CPUID runtime dispatch để kích hoạt kernel AVX2/AVX-512 phù hợp tại thời điểm chạy. Đồng thời, đối với tác vụ decode LLM trên phần cứng này, tốc độ chủ yếu bị giới hạn bởi băng thông bộ nhớ RAM (memory bandwidth) hơn là khả năng tính toán của CPU (instruction-bound). Do đó, việc tự biên dịch trực tiếp từ nguồn với `-DGGML_NATIVE=ON` không tạo ra sự khác biệt đáng kể (chỉ 1.02x).
 
 ---
 
 ## 7. Điều làm bạn ngạc nhiên nhất  *(optional)*
 
-_(1–2 câu. Không bắt buộc, nhưng grader đọc hết.)_
+*(1–2 câu. Không bắt buộc, nhưng grader đọc hết.)*
 
-_(để trống nếu bạn không làm phần này)_
+*(để trống nếu bạn không làm phần này)*
 
 ---
 
@@ -174,8 +174,8 @@ _(để trống nếu bạn không làm phần này)_
       đã được thay bằng nhận xét của bạn
 - [x] 5 screenshots trong `submission/screenshots/`
 - [x] `make verify` → **exit 0**
-- [ ] Repo GitHub ở chế độ **public**
-- [ ] Đã paste public URL vào VinUni LMS
+- [x] Repo GitHub ở chế độ **public**
+- [x] Đã paste public URL vào VinUni LMS
 - [x] **Không** commit `models/*.gguf` hay `runtime/` (đã có trong `.gitignore`)
 
 **Quan trọng:** repo phải **public** đến khi điểm được công bố. Private → grader không
